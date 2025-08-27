@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>登录 - 生活管理系统</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/theme-light.css">
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .login-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            width: 90%;
+            max-width: 400px;
+            animation: slideIn 0.5s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .login-header h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .login-header p {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+            box-sizing: border-box;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .emoji-selector {
+            margin-bottom: 20px;
+        }
+        
+        .emoji-selector label {
+            display: block;
+            margin-bottom: 10px;
+            color: #555;
+            font-weight: 500;
+        }
+        
+        .emoji-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .emoji-option {
+            width: 40px;
+            height: 40px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 24px;
+            transition: all 0.3s;
+        }
+        
+        .emoji-option:hover {
+            transform: scale(1.1);
+            border-color: #667eea;
+        }
+        
+        .emoji-option.selected {
+            border-color: #667eea;
+            background: #f0f4ff;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .selected-emoji-display {
+            text-align: center;
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        
+        .login-button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .login-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+        
+        .login-button:active {
+            transform: translateY(0);
+        }
+        
+        .register-link {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .register-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .register-link a:hover {
+            text-decoration: underline;
+        }
+        
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: none;
+            font-size: 14px;
+        }
+        
+        .version-info {
+            text-align: center;
+            margin-top: 20px;
+            color: #999;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <h1>🎯 生活管理系统</h1>
+            <p>AI 智能任务管理平台</p>
+        </div>
+        
+        <div class="error-message" id="errorMessage"></div>
+        
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">用户名</label>
+                <input type="text" id="username" name="username" placeholder="输入您的用户名" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">密码</label>
+                <input type="password" id="password" name="password" placeholder="输入您的密码" required>
+            </div>
+            
+            <div class="emoji-selector">
+                <label>选择您的头像</label>
+                <div class="selected-emoji-display" id="selectedEmojiDisplay">😊</div>
+                <div class="emoji-grid" id="emojiGrid">
+                    <!-- Emoji options will be added by JavaScript -->
+                </div>
+            </div>
+            
+            <button type="submit" class="login-button">登录</button>
+        </form>
+        
+        <div class="register-link">
+            还没有账号？<a href="#" id="registerLink">立即注册</a>
+        </div>
+        
+        <div class="version-info">
+            v4.9 - 多用户协作版本
+        </div>
+    </div>
+    
+    <script>
+        // 可选的 emoji 头像
+        const availableEmojis = [
+            '😊', '😎', '🤓', '😇', '🥳', '😍', '🤗', '🤔',
+            '😴', '😜', '🤠', '🥸', '👨‍💻', '👩‍💻', '🧑‍🎨', '👨‍🎓',
+            '🦁', '🐯', '🐶', '🐱', '🐼', '🐨', '🐸', '🦊',
+            '🌟', '⭐', '🌙', '☀️', '🌈', '🔥', '💎', '🎯'
+        ];
+        
+        let selectedEmoji = '😊';
+        const emojiGrid = document.getElementById('emojiGrid');
+        const selectedEmojiDisplay = document.getElementById('selectedEmojiDisplay');
+        
+        // 生成 emoji 选项
+        availableEmojis.forEach(emoji => {
+            const emojiOption = document.createElement('div');
+            emojiOption.className = 'emoji-option';
+            emojiOption.textContent = emoji;
+            if (emoji === selectedEmoji) {
+                emojiOption.classList.add('selected');
+            }
+            
+            emojiOption.addEventListener('click', () => {
+                // 移除之前的选中状态
+                document.querySelectorAll('.emoji-option').forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+                // 添加新的选中状态
+                emojiOption.classList.add('selected');
+                selectedEmoji = emoji;
+                selectedEmojiDisplay.textContent = emoji;
+            });
+            
+            emojiGrid.appendChild(emojiOption);
+        });
+        
+        // 处理登录表单提交
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const errorMessage = document.getElementById('errorMessage');
+            
+            if (!username || !password) {
+                errorMessage.textContent = '请输入用户名和密码';
+                errorMessage.style.display = 'block';
+                return;
+            }
+            
+            try {
+                // 调用登录 API
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username,
+                        password,
+                        avatar: selectedEmoji
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    // 保存用户信息到 localStorage
+                    localStorage.setItem('currentUser', JSON.stringify({
+                        username: data.username,
+                        avatar: data.avatar || selectedEmoji,
+                        token: data.token
+                    }));
+                    
+                    // 跳转到主页
+                    window.location.href = 'index.html';
+                } else {
+                    const error = await response.json();
+                    errorMessage.textContent = error.message || '登录失败，请检查用户名和密码';
+                    errorMessage.style.display = 'block';
+                }
+            } catch (error) {
+                // 如果 API 不可用，使用本地存储模拟登录
+                const users = JSON.parse(localStorage.getItem('users') || '{}');
+                
+                if (users[username] && users[username].password === password) {
+                    localStorage.setItem('currentUser', JSON.stringify({
+                        username,
+                        avatar: users[username].avatar || selectedEmoji,
+                        token: btoa(username + ':' + Date.now())
+                    }));
+                    window.location.href = 'index.html';
+                } else if (!users[username]) {
+                    // 自动注册新用户
+                    users[username] = {
+                        password,
+                        avatar: selectedEmoji
+                    };
+                    localStorage.setItem('users', JSON.stringify(users));
+                    localStorage.setItem('currentUser', JSON.stringify({
+                        username,
+                        avatar: selectedEmoji,
+                        token: btoa(username + ':' + Date.now())
+                    }));
+                    window.location.href = 'index.html';
+                } else {
+                    errorMessage.textContent = '密码错误';
+                    errorMessage.style.display = 'block';
+                }
+            }
+        });
+        
+        // 注册链接处理
+        document.getElementById('registerLink').addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('errorMessage').textContent = '直接输入新用户名和密码即可自动注册';
+            document.getElementById('errorMessage').style.display = 'block';
+            document.getElementById('errorMessage').style.background = '#e8f4fd';
+            document.getElementById('errorMessage').style.color = '#1976d2';
+        });
+    </script>
+</body>
+</html>

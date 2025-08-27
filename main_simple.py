@@ -136,6 +136,7 @@ class Task(BaseModel):
     status: str = "pending"
     priority: int = 3
     estimated_minutes: int = 30
+    username: Optional[str] = None
     
 @app.get("/api/tasks")
 async def get_tasks():
@@ -156,6 +157,9 @@ async def create_task(task: Task):
     task_data = task.model_dump()
     task_data["id"] = task_id
     task_data["created_at"] = datetime.now().isoformat()
+    # 添加用户名字段（如果提供）
+    if hasattr(task, 'username') and task.username:
+        task_data["username"] = task.username
     tasks_db[task_id] = task_data
     await save_tasks_async()  # 保存到文件
     return JSONResponse({"status": "success", "task": task_data})

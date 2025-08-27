@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>生活管理系统 v4.8 - AI智能化版本</title>
+    <title>生活管理系统 v4.9 - 多用户协作版本</title>
     <!-- 版本标识 -->
-    <meta name="version" content="v4.8">
-    <meta name="description" content="v4.8：修复已完成任务恢复功能，完善任务状态管理">
+    <meta name="version" content="v4.9">
+    <meta name="description" content="v4.9：添加多用户支持，用户登录与任务隔离">
     
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="./favicon.ico">
@@ -52,7 +52,7 @@
                 <span class="logo">🎯</span>
                 <div>
                     <h1>生活管理系统</h1>
-                    <span style="font-size: 10px; color: #666; font-weight: 500;">v4.8 - AI智能管理</span>
+                    <span style="font-size: 10px; color: #666; font-weight: 500;">v4.9 - 多用户协作</span>
                 </div>
             </div>
             <div class="nav-stats">
@@ -63,6 +63,11 @@
                 <div class="stat-item">
                     <span class="stat-label">生产力分数</span>
                     <span class="stat-value" id="productivityScore">0%</span>
+                </div>
+                <div class="stat-item user-info" style="margin-left: 20px; display: flex; align-items: center; gap: 8px;">
+                    <span id="userAvatar" style="font-size: 24px;">😊</span>
+                    <span id="userName" style="color: #666; font-weight: 500;">用户</span>
+                    <button id="logoutBtn" style="background: #ff4444; color: white; border: none; padding: 4px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">退出</button>
                 </div>
             </div>
         </nav>

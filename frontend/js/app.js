@@ -1,6 +1,34 @@
-// 生活管理系统前端应用 v4.8
+// 生活管理系统前端应用 v4.9
 // 更新日期: 2025-08-27
-// 特性: AI智能处理 + DeepSeek集成 + 部署优化
+// 特性: AI智能处理 + DeepSeek集成 + 部署优化 + 多用户支持
+
+// 用户认证检查
+let currentUser = null;
+
+function checkUserAuth() {
+    const userStr = localStorage.getItem('currentUser');
+    if (!userStr) {
+        // 未登录，跳转到登录页面
+        window.location.href = 'login.html';
+        return false;
+    }
+    
+    try {
+        currentUser = JSON.parse(userStr);
+        // 显示用户信息
+        const userAvatar = document.getElementById('userAvatar');
+        const userName = document.getElementById('userName');
+        if (userAvatar) userAvatar.textContent = currentUser.avatar || '😊';
+        if (userName) userName.textContent = currentUser.username || '用户';
+        return true;
+    } catch (error) {
+        console.error('用户信息解析失败:', error);
+        localStorage.removeItem('currentUser');
+        window.location.href = 'login.html';
+        return false;
+    }
+}
+
 // 动态检测API基础URL
 const API_BASE = (() => {
     const hostname = window.location.hostname;
@@ -761,6 +789,11 @@ async function addQuickTask() {
             taskData.scheduled_end = toLocalISOString(new Date(scheduledTime.getTime() + estimatedMinutes * 60000));
         }
         
+        // 添加当前用户名
+        if (currentUser && currentUser.username) {
+            taskData.username = currentUser.username;
+        }
+        
         const response = await fetch(`${API_BASE}/api/tasks`, {
             method: 'POST',
             headers: {
@@ -1011,8 +1044,15 @@ async function loadTasks() {
         const poolTasks = allTasks.filter(t => t.status === 'pool');  // 只显示状态为pool的任务
         const completedTasks = allTasks.filter(t => t.status === 'completed');
         
-        // 按优先级排序（优先级高的在前），优先级相同则按时间排序
+        // 按优先级排序（当前用户的任务优先，然后按优先级高的在前），优先级相同则按时间排序
         pendingTasks.sort((a, b) => {
+            // 首先检查任务所属用户（当前用户的任务永远在前）
+            const aIsCurrentUser = a.username === currentUser?.username;
+            const bIsCurrentUser = b.username === currentUser?.username;
+            
+            if (aIsCurrentUser && !bIsCurrentUser) return -1;
+            if (!aIsCurrentUser && bIsCurrentUser) return 1;
+            
             // 确保优先级有默认值
             const priorityA = a.priority || 3;
             const priorityB = b.priority || 3;
@@ -1159,37 +1199,45 @@ function renderTaskItem(task) {
         }
     }
     
+    const isOtherUser = task.username && task.username !== currentUser?.username;
     return `
-        <div class="task-item ${task.domain} ${hasActiveTimer ? 'in-progress' : (hasPausedTimer ? 'paused' : task.status)}" 
+        <div class="task-item ${task.domain} ${hasActiveTimer ? 'in-progress' : (hasPausedTimer ? 'paused' : task.status)} ${isOtherUser ? 'other-user-task' : ''}" 
              data-task-id="${task.id}" 
-             draggable="true" 
-             ondragstart="handleDragStart(event, '${task.id}')"
-             ondragend="handleDragEnd(event)">
-            <span class="drag-handle">⋮⋮</span>
+             draggable="${!isOtherUser}" 
+             ondragstart="${isOtherUser ? '' : `handleDragStart(event, '${task.id}')`}"
+             ondragend="${isOtherUser ? '' : 'handleDragEnd(event)'}"
+             style="${isOtherUser ? 'background: linear-gradient(135deg, #f5f5f5 0%, #fafafa 100%); opacity: 0.9;' : ''}">
+            <span class="drag-handle" style="${isOtherUser ? 'visibility: hidden;' : ''}">⋮⋮</span>
             <input type="checkbox" class="task-checkbox" 
                    ${task.status === 'completed' ? 'checked' : ''}
-                   onchange="toggleTaskStatus('${task.id}', this.checked)">
+                   ${task.username && task.username !== currentUser?.username ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}
+                   onchange="${task.username && task.username !== currentUser?.username ? '' : `toggleTaskStatus('${task.id}', this.checked)`}">
             <div class="task-content">
-                <div class="task-title" contenteditable="${task.status === 'completed' ? 'false' : 'true'}" 
-                     onblur="${task.status === 'completed' ? '' : `updateTaskTitle('${task.id}', this.innerText)`}"
-                     onkeypress="${task.status === 'completed' ? '' : `if(event.key==='Enter'){event.preventDefault();this.blur();}`}"
-                     style="${task.status === 'completed' ? 'cursor: default;' : ''}">${task.title}</div>
+                <div class="task-title" contenteditable="${task.status === 'completed' || (task.username && task.username !== currentUser?.username) ? 'false' : 'true'}" 
+                     onblur="${task.status === 'completed' || (task.username && task.username !== currentUser?.username) ? '' : `updateTaskTitle('${task.id}', this.innerText)`}"
+                     onkeypress="${task.status === 'completed' || (task.username && task.username !== currentUser?.username) ? '' : `if(event.key==='Enter'){event.preventDefault();this.blur();}`}"
+                     style="${task.status === 'completed' || (task.username && task.username !== currentUser?.username) ? 'cursor: default;' : ''}">
+                    ${task.title}
+                    ${task.username && task.username !== currentUser?.username ? 
+                      `<span style="margin-left: 8px; padding: 2px 6px; background: #f0f0f0; border-radius: 12px; font-size: 12px; color: #666;">@${task.username}</span>` : 
+                      ''}
+                </div>
                 <div class="task-meta">
                     <select class="domain-selector ${task.domain}" 
-                            onchange="${task.status === 'completed' ? '' : `changeTaskDomain('${task.id}', this.value)`}"
+                            onchange="${task.status === 'completed' || (task.username && task.username !== currentUser?.username) ? '' : `changeTaskDomain('${task.id}', this.value)`}"
                             data-current="${task.domain}"
-                            ${task.status === 'completed' ? 'disabled' : ''}>
+                            ${task.status === 'completed' || (task.username && task.username !== currentUser?.username) ? 'disabled' : ''}>
                         <option value="academic" ${task.domain === 'academic' ? 'selected' : ''}>🎓 学术</option>
                         <option value="income" ${task.domain === 'income' ? 'selected' : ''}>💰 收入</option>
                         <option value="growth" ${task.domain === 'growth' ? 'selected' : ''}>🌱 成长</option>
                         <option value="life" ${task.domain === 'life' ? 'selected' : ''}>🏠 生活</option>
                     </select>
                     <span>⏱ <input type="number" class="inline-edit-number" value="${task.estimated_minutes || 30}" 
-                            onchange="${task.status === 'completed' ? '' : `updateTaskField('${task.id}', 'estimated_minutes', this.value)`}" 
-                            min="5" max="480" ${task.status === 'completed' ? 'disabled' : ''}> 分钟</span>
+                            onchange="${task.status === 'completed' || (task.username && task.username !== currentUser?.username) ? '' : `updateTaskField('${task.id}', 'estimated_minutes', this.value)`}" 
+                            min="5" max="480" ${task.status === 'completed' || (task.username && task.username !== currentUser?.username) ? 'disabled' : ''}> 分钟</span>
                     <span>🎯 优先级 <select class="inline-edit-select" 
-                            onchange="${task.status === 'completed' ? '' : `updateTaskField('${task.id}', 'priority', this.value)`}"
-                            ${task.status === 'completed' ? 'disabled' : ''}>
+                            onchange="${task.status === 'completed' || (task.username && task.username !== currentUser?.username) ? '' : `updateTaskField('${task.id}', 'priority', this.value)`}"
+                            ${task.status === 'completed' || (task.username && task.username !== currentUser?.username) ? 'disabled' : ''}>
                         ${[1,2,3,4,5].map(p => `<option value="${p}" ${task.priority === p ? 'selected' : ''}>${p}</option>`).join('')}
                     </select></span>
                     ${task.status !== 'pool' ? `<span class="time-input-wrapper">📅 
@@ -1204,7 +1252,7 @@ function renderTaskItem(task) {
             </div>
             <div class="task-actions">
                 ${hasElapsedTime ? `<div class="timer-display"><span class="timer-time">⏱️ ${formatTime(elapsedSeconds)}</span></div>` : ''}
-                ${task.status !== 'completed' ? 
+                ${task.status !== 'completed' && (!task.username || task.username === currentUser?.username) ? 
                     (hasActiveTimer ? 
                         `<button onclick="pauseTaskTimer('${task.id}')" class="btn-small btn-timer" style="background: #FFA500;">⏸️ 暂停</button>` :
                         (hasPausedTimer ? 
@@ -1214,8 +1262,11 @@ function renderTaskItem(task) {
                     ) : ''}
                 <input type="checkbox" class="task-select-checkbox" 
                        data-task-id="${task.id}"
-                       onchange="toggleTaskSelection('${task.id}')">
-                <button onclick="deleteTask('${task.id}')" class="btn-small btn-danger">删除</button>
+                       ${task.username && task.username !== currentUser?.username ? 'disabled style="opacity: 0.5;"' : ''}
+                       onchange="${task.username && task.username !== currentUser?.username ? '' : `toggleTaskSelection('${task.id}')`}">
+                ${(!task.username || task.username === currentUser?.username) ? 
+                    `<button onclick="deleteTask('${task.id}')" class="btn-small btn-danger">删除</button>` : 
+                    ''}
             </div>
         </div>
     `;
@@ -2785,12 +2836,17 @@ function loadSavedTheme() {
 
 
 document.addEventListener('DOMContentLoaded', () => {
+    // 检查用户登录状态
+    if (!checkUserAuth()) {
+        return; // 未登录，已跳转到登录页面
+    }
+    
     loadSavedTheme();
     
     // 版本信息和运行模式
-    console.log('🚀 生活管理系统 v4.8 已启动');
+    console.log('🚀 生活管理系统 v4.9 已启动');
     console.log('📅 版本日期: 2025-08-27');
-    console.log('✨ 新功能: AI智能处理 + DeepSeek集成 + 部署优化');
+    console.log('✨ 新功能: AI智能处理 + DeepSeek集成 + 多用户支持');
     console.log('🌐 当前运行环境:', {
         hostname: window.location.hostname,
         API_BASE,
@@ -2806,6 +2862,17 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => {
             showToast('🚀 Railway 稳定版本', 'success');
         }, 2000);
+    }
+    
+    // 添加登出按钮事件
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+            if (confirm('确定要退出登录吗？')) {
+                localStorage.removeItem('currentUser');
+                window.location.href = 'login.html';
+            }
+        });
     }
     
     // 加载暂停的计时器

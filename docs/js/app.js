@@ -1,6 +1,34 @@
-// 生活管理系统前端应用 v4.8
+// 生活管理系统前端应用 v4.9
 // 更新日期: 2025-08-27
-// 特性: AI智能处理 + DeepSeek集成 + 部署优化
+// 特性: AI智能处理 + DeepSeek集成 + 部署优化 + 多用户支持
+
+// 用户认证检查
+let currentUser = null;
+
+function checkUserAuth() {
+    const userStr = localStorage.getItem('currentUser');
+    if (!userStr) {
+        // 未登录，跳转到登录页面
+        window.location.href = 'login.html';
+        return false;
+    }
+    
+    try {
+        currentUser = JSON.parse(userStr);
+        // 显示用户信息
+        const userAvatar = document.getElementById('userAvatar');
+        const userName = document.getElementById('userName');
+        if (userAvatar) userAvatar.textContent = currentUser.avatar || '😊';
+        if (userName) userName.textContent = currentUser.username || '用户';
+        return true;
+    } catch (error) {
+        console.error('用户信息解析失败:', error);
+        localStorage.removeItem('currentUser');
+        window.location.href = 'login.html';
+        return false;
+    }
+}
+
 // 动态检测API基础URL
 const API_BASE = (() => {
     const hostname = window.location.hostname;
@@ -761,6 +789,11 @@ async function addQuickTask() {
             taskData.scheduled_end = toLocalISOString(new Date(scheduledTime.getTime() + estimatedMinutes * 60000));
         }
         
+        // 添加当前用户名
+        if (currentUser && currentUser.username) {
+            taskData.username = currentUser.username;
+        }
+        
         const response = await fetch(`${API_BASE}/api/tasks`, {
             method: 'POST',
             headers: {
@@ -1011,8 +1044,15 @@ async function loadTasks() {
         const poolTasks = allTasks.filter(t => t.status === 'pool');  // 只显示状态为pool的任务
         const completedTasks = allTasks.filter(t => t.status === 'completed');
         
-        // 按优先级排序（优先级高的在前），优先级相同则按时间排序
+        // 按优先级排序（当前用户的任务优先，然后按优先级高的在前），优先级相同则按时间排序
         pendingTasks.sort((a, b) => {
+            // 首先检查任务所属用户（当前用户的任务永远在前）
+            const aIsCurrentUser = a.username === currentUser?.username;
+            const bIsCurrentUser = b.username === currentUser?.username;
+            
+            if (aIsCurrentUser && !bIsCurrentUser) return -1;
+            if (!aIsCurrentUser && bIsCurrentUser) return 1;
+            
             // 确保优先级有默认值
             const priorityA = a.priority || 3;
             const priorityB = b.priority || 3;
@@ -1173,7 +1213,12 @@ function renderTaskItem(task) {
                 <div class="task-title" contenteditable="${task.status === 'completed' ? 'false' : 'true'}" 
                      onblur="${task.status === 'completed' ? '' : `updateTaskTitle('${task.id}', this.innerText)`}"
                      onkeypress="${task.status === 'completed' ? '' : `if(event.key==='Enter'){event.preventDefault();this.blur();}`}"
-                     style="${task.status === 'completed' ? 'cursor: default;' : ''}">${task.title}</div>
+                     style="${task.status === 'completed' ? 'cursor: default;' : ''}">
+                    ${task.title}
+                    ${task.username && task.username !== currentUser?.username ? 
+                      `<span style="margin-left: 8px; padding: 2px 6px; background: #f0f0f0; border-radius: 12px; font-size: 12px; color: #666;">@${task.username}</span>` : 
+                      ''}
+                </div>
                 <div class="task-meta">
                     <select class="domain-selector ${task.domain}" 
                             onchange="${task.status === 'completed' ? '' : `changeTaskDomain('${task.id}', this.value)`}"
@@ -2785,12 +2830,17 @@ function loadSavedTheme() {
 
 
 document.addEventListener('DOMContentLoaded', () => {
+    // 检查用户登录状态
+    if (!checkUserAuth()) {
+        return; // 未登录，已跳转到登录页面
+    }
+    
     loadSavedTheme();
     
     // 版本信息和运行模式
-    console.log('🚀 生活管理系统 v4.8 已启动');
+    console.log('🚀 生活管理系统 v4.9 已启动');
     console.log('📅 版本日期: 2025-08-27');
-    console.log('✨ 新功能: AI智能处理 + DeepSeek集成 + 部署优化');
+    console.log('✨ 新功能: AI智能处理 + DeepSeek集成 + 多用户支持');
     console.log('🌐 当前运行环境:', {
         hostname: window.location.hostname,
         API_BASE,
@@ -2806,6 +2856,17 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => {
             showToast('🚀 Railway 稳定版本', 'success');
         }, 2000);
+    }
+    
+    // 添加登出按钮事件
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+            if (confirm('确定要退出登录吗？')) {
+                localStorage.removeItem('currentUser');
+                window.location.href = 'login.html';
+            }
+        });
     }
     
     // 加载暂停的计时器
