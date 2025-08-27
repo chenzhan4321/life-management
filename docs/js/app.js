@@ -5,17 +5,22 @@
 // 用户认证检查
 let currentUser = null;
 let userEmojiCache = {};
+let isReadOnlyMode = true; // 默认只读模式
 
 function checkUserAuth() {
     const userStr = localStorage.getItem('currentUser');
     if (!userStr) {
-        // 未登录，跳转到登录页面
-        window.location.href = 'login.html';
+        // 未登录，设置为只读模式
+        isReadOnlyMode = true;
+        currentUser = null;
+        updateAuthButtons();
         return false;
     }
     
     try {
         currentUser = JSON.parse(userStr);
+        isReadOnlyMode = false; // 登录用户可以编辑
+        
         // 显示用户信息
         const userAvatar = document.getElementById('userAvatar');
         const userName = document.getElementById('userName');
@@ -25,12 +30,120 @@ function checkUserAuth() {
         // 缓存当前用户的emoji
         userEmojiCache[currentUser.username] = currentUser.avatar || '😊';
         
+        updateAuthButtons();
         return true;
     } catch (error) {
         console.error('用户信息解析失败:', error);
         localStorage.removeItem('currentUser');
-        window.location.href = 'login.html';
+        isReadOnlyMode = true;
+        currentUser = null;
+        updateAuthButtons();
         return false;
+    }
+}
+
+// 更新认证按钮显示
+function updateAuthButtons() {
+    const userInfo = document.querySelector('.user-info');
+    if (!userInfo) return;
+    
+    if (currentUser) {
+        // 已登录，显示用户信息和登出按钮
+        userInfo.innerHTML = `
+            <span id="userAvatar" style="font-size: 24px;">${currentUser.avatar || '😊'}</span>
+            <span id="userName" style="color: #666; font-weight: 500;">${currentUser.username}</span>
+            <button id="logoutBtn" onclick="logout()" style="background: #ff4444; color: white; border: none; padding: 4px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">退出</button>
+        `;
+    } else {
+        // 未登录，显示登录和注册按钮
+        userInfo.innerHTML = `
+            <button onclick="window.location.href='login.html'" style="background: #667eea; color: white; border: none; padding: 6px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; margin-right: 8px;">登录</button>
+            <button onclick="window.location.href='login.html#register'" style="background: transparent; color: #667eea; border: 1px solid #667eea; padding: 6px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">注册</button>
+        `;
+    }
+    
+    // 更新 AI 输入区域的显示
+    updateAIInputSection();
+}
+
+// 更新 AI 输入区域显示
+function updateAIInputSection() {
+    const aiInputSection = document.querySelector('.ai-input-section');
+    if (!aiInputSection) return;
+    
+    if (isReadOnlyMode) {
+        // 只读模式下显示提示信息
+        const existingNotice = aiInputSection.querySelector('.read-only-notice');
+        if (!existingNotice) {
+            const notice = document.createElement('div');
+            notice.className = 'read-only-notice';
+            notice.style.cssText = `
+                background: #f0f4ff;
+                border: 1px solid #667eea;
+                border-radius: 8px;
+                padding: 12px;
+                margin-bottom: 16px;
+                text-align: center;
+                color: #667eea;
+            `;
+            notice.innerHTML = `
+                <p style="margin: 0; font-weight: 500;">📝 当前为只读模式</p>
+                <p style="margin: 4px 0 0 0; font-size: 14px;">
+                    <a href="login.html" style="color: #667eea; text-decoration: underline;">登录</a> 后即可添加和管理任务
+                </p>
+            `;
+            aiInputSection.insertBefore(notice, aiInputSection.firstChild.nextSibling);
+        }
+        
+        // 禁用输入和按钮
+        const textarea = document.getElementById('aiTaskInput');
+        const buttons = aiInputSection.querySelectorAll('button');
+        if (textarea) {
+            textarea.disabled = true;
+            textarea.placeholder = '请登录后使用 AI 智能任务处理功能';
+        }
+        buttons.forEach(btn => {
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+            btn.style.cursor = 'not-allowed';
+        });
+    } else {
+        // 移除只读提示
+        const notice = aiInputSection.querySelector('.read-only-notice');
+        if (notice) notice.remove();
+        
+        // 启用输入和按钮
+        const textarea = document.getElementById('aiTaskInput');
+        const buttons = aiInputSection.querySelectorAll('button');
+        if (textarea) {
+            textarea.disabled = false;
+            textarea.placeholder = `输入任务，AI 会自动分类、预测时间、安排时间槽...
+
+示例：
+回复 Tony 的邮件
+研究 OCR 错误检测方法
+整理出差票据给雪媚
+法语老师通信30分钟
+
+或用分号分隔：回复邮件；整理文档；开会讨论`;
+        }
+        buttons.forEach(btn => {
+            btn.disabled = false;
+            btn.style.opacity = '';
+            btn.style.cursor = '';
+        });
+    }
+}
+
+// 登出函数
+function logout() {
+    if (confirm('确定要退出登录吗？')) {
+        localStorage.removeItem('currentUser');
+        currentUser = null;
+        isReadOnlyMode = true;
+        updateAuthButtons();
+        loadTasks(); // 重新加载任务（只读模式）
+        showToast('已退出登录', 'info');
     }
 }
 
@@ -862,6 +975,15 @@ async function addQuickTask() {
 
 // AI 智能处理任务
 async function aiProcessTasks() {
+    // 检查是否为只读模式
+    if (isReadOnlyMode) {
+        showToast('请先登录后再添加任务', 'warning');
+        setTimeout(() => {
+            window.location.href = 'login.html';
+        }, 1500);
+        return;
+    }
+    
     const textarea = document.getElementById('aiTaskInput');
     const input = textarea.value.trim();
     
@@ -1234,23 +1356,25 @@ function renderTaskItem(task) {
     }
     
     const isOtherUser = task.username && task.username !== currentUser?.username;
+    const canEdit = !isReadOnlyMode && !isOtherUser;  // 只有登录且是自己的任务才能编辑
+    
     return `
         <div class="task-item ${task.domain} ${hasActiveTimer ? 'in-progress' : (hasPausedTimer ? 'paused' : task.status)} ${isOtherUser ? 'other-user-task' : ''}" 
              data-task-id="${task.id}" 
-             draggable="${!isOtherUser}" 
-             ondragstart="${isOtherUser ? '' : `handleDragStart(event, '${task.id}')`}"
-             ondragend="${isOtherUser ? '' : 'handleDragEnd(event)'}"
+             draggable="${canEdit}" 
+             ondragstart="${canEdit ? `handleDragStart(event, '${task.id}')` : ''}"
+             ondragend="${canEdit ? 'handleDragEnd(event)' : ''}"
              style="${isOtherUser ? 'background: linear-gradient(135deg, #f5f5f5 0%, #fafafa 100%); opacity: 0.9;' : ''}">
-            <span class="drag-handle" style="${isOtherUser ? 'visibility: hidden;' : ''}">⋮⋮</span>
+            <span class="drag-handle" style="${!canEdit ? 'visibility: hidden;' : ''}">⋮⋮</span>
             <input type="checkbox" class="task-checkbox" 
                    ${task.status === 'completed' ? 'checked' : ''}
-                   ${task.username && task.username !== currentUser?.username ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}
-                   onchange="${task.username && task.username !== currentUser?.username ? '' : `toggleTaskStatus('${task.id}', this.checked)`}">
+                   ${!canEdit ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}
+                   onchange="${canEdit ? `toggleTaskStatus('${task.id}', this.checked)` : ''}">
             <div class="task-content">
-                <div class="task-title" contenteditable="${task.status === 'completed' || (task.username && task.username !== currentUser?.username) ? 'false' : 'true'}" 
-                     onblur="${task.status === 'completed' || (task.username && task.username !== currentUser?.username) ? '' : `updateTaskTitle('${task.id}', this.innerText)`}"
-                     onkeypress="${task.status === 'completed' || (task.username && task.username !== currentUser?.username) ? '' : `if(event.key==='Enter'){event.preventDefault();this.blur();}`}"
-                     style="${task.status === 'completed' || (task.username && task.username !== currentUser?.username) ? 'cursor: default;' : ''}">
+                <div class="task-title" contenteditable="${task.status === 'completed' || !canEdit ? 'false' : 'true'}" 
+                     onblur="${task.status === 'completed' || !canEdit ? '' : `updateTaskTitle('${task.id}', this.innerText)`}"
+                     onkeypress="${task.status === 'completed' || !canEdit ? '' : `if(event.key==='Enter'){event.preventDefault();this.blur();}`}"
+                     style="${task.status === 'completed' || !canEdit ? 'cursor: default;' : ''}">
                     ${getUserEmoji(task.username)} ${task.title}
                     ${task.username && task.username !== currentUser?.username ? 
                       `<span style="margin-left: 8px; padding: 2px 6px; background: #f0f0f0; border-radius: 12px; font-size: 12px; color: #666;">@${task.username}</span>` : 
@@ -1258,9 +1382,9 @@ function renderTaskItem(task) {
                 </div>
                 <div class="task-meta">
                     <select class="domain-selector ${task.domain}" 
-                            onchange="${task.status === 'completed' || (task.username && task.username !== currentUser?.username) ? '' : `changeTaskDomain('${task.id}', this.value)`}"
+                            onchange="${task.status === 'completed' || !canEdit ? '' : `changeTaskDomain('${task.id}', this.value)`}"
                             data-current="${task.domain}"
-                            ${task.status === 'completed' || (task.username && task.username !== currentUser?.username) ? 'disabled' : ''}>
+                            ${task.status === 'completed' || !canEdit ? 'disabled' : ''}>
                         <option value="academic" ${task.domain === 'academic' ? 'selected' : ''}>🎓 学术</option>
                         <option value="income" ${task.domain === 'income' ? 'selected' : ''}>💰 收入</option>
                         <option value="growth" ${task.domain === 'growth' ? 'selected' : ''}>🌱 成长</option>
@@ -1286,7 +1410,7 @@ function renderTaskItem(task) {
             </div>
             <div class="task-actions">
                 ${hasElapsedTime ? `<div class="timer-display"><span class="timer-time">⏱️ ${formatTime(elapsedSeconds)}</span></div>` : ''}
-                ${task.status !== 'completed' && (!task.username || task.username === currentUser?.username) ? 
+                ${task.status !== 'completed' && canEdit ? 
                     (hasActiveTimer ? 
                         `<button onclick="pauseTaskTimer('${task.id}')" class="btn-small btn-timer" style="background: #FFA500;">⏸️ 暂停</button>` :
                         (hasPausedTimer ? 
@@ -1296,9 +1420,9 @@ function renderTaskItem(task) {
                     ) : ''}
                 <input type="checkbox" class="task-select-checkbox" 
                        data-task-id="${task.id}"
-                       ${task.username && task.username !== currentUser?.username ? 'disabled style="opacity: 0.5;"' : ''}
-                       onchange="${task.username && task.username !== currentUser?.username ? '' : `toggleTaskSelection('${task.id}')`}">
-                ${(!task.username || task.username === currentUser?.username) ? 
+                       ${!canEdit ? 'disabled style="opacity: 0.5;"' : ''}
+                       onchange="${canEdit ? `toggleTaskSelection('${task.id}')` : ''}">
+                ${canEdit ? 
                     `<button onclick="deleteTask('${task.id}')" class="btn-small btn-danger">删除</button>` : 
                     ''}
             </div>
@@ -2870,17 +2994,15 @@ function loadSavedTheme() {
 
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 检查用户登录状态
-    if (!checkUserAuth()) {
-        return; // 未登录，已跳转到登录页面
-    }
+    // 检查用户登录状态（允许未登录用户查看）
+    checkUserAuth();
     
     loadSavedTheme();
     
     // 版本信息和运行模式
-    console.log('🚀 生活管理系统 v4.9 已启动');
+    console.log('🚀 生活管理系统 v5.0 已启动');
     console.log('📅 版本日期: 2025-08-27');
-    console.log('✨ 新功能: AI智能处理 + DeepSeek集成 + 多用户支持');
+    console.log('✨ 新功能: 公开访问模式 + AI智能处理 + 多用户支持');
     console.log('🌐 当前运行环境:', {
         hostname: window.location.hostname,
         API_BASE,
@@ -2890,7 +3012,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 显示版本信息提示
     if (window.location.hostname.includes('github.io')) {
         setTimeout(() => {
-            showToast('🚀 生活管理系统 v4.8 - AI智能化版本', 'success');
+            showToast('🚀 生活管理系统 v5.0 - 公开访问版本', 'success');
         }, 2000);
     } else if (window.location.hostname.includes('railway.app')) {
         setTimeout(() => {
@@ -2898,16 +3020,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 2000);
     }
     
-    // 添加登出按钮事件
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', () => {
-            if (confirm('确定要退出登录吗？')) {
-                localStorage.removeItem('currentUser');
-                window.location.href = 'login.html';
-            }
-        });
-    }
+    // 登出按钮事件已经在 logout() 函数中处理
     
     // 加载暂停的计时器
     loadPausedTimersFromLocalStorage();
