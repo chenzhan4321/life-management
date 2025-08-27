@@ -1,4 +1,4 @@
-# 生活管理系统 v4.4
+# 生活管理系统 v4.7
 
 AI驱动的智能任务管理系统，帮助您高效管理生活的四大领域。
 
@@ -53,4 +53,4 @@ DEEPSEEK_API_KEY=your_api_key
 MIT
 
 ---
-Made with ❤️ v4.4 (2025)
+Made with ❤️ v4.7 (2025)

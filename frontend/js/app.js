@@ -1,4 +1,4 @@
-// 生活管理系统前端应用 v4.4
+// 生活管理系统前端应用 v4.7
 // 更新日期: 2025-08-27
 // 特性: AI智能处理 + DeepSeek集成 + 部署优化
 // 动态检测API基础URL
@@ -1872,6 +1872,13 @@ async function updateTaskTitle(taskId, newTitle) {
 // 更新任务字段
 async function updateTaskField(taskId, field, value) {
     try {
+        // 检查任务是否已完成（已归档的任务不应该被更新）
+        const task = window.currentTasks?.find(t => t.id === taskId);
+        if (task && task.status === 'completed') {
+            console.log('跳过更新已完成的任务:', taskId);
+            return; // 不更新已完成的任务
+        }
+        
         const updateData = {};
         updateData[field] = field === 'estimated_minutes' || field === 'priority' ? parseInt(value) : value;
         
@@ -2500,7 +2507,7 @@ async function toggleTaskStatus(taskId, isCompleted) {
             // 如果任务完成，清除计时器数据
             if (isCompleted) {
                 taskTimerData.delete(taskId);
-                clearTaskReminder(taskId);
+                // clearTaskReminder(taskId); // 注释掉，函数未定义
             }
             
             // 清除过期提醒记录（无论完成还是恢复）
@@ -2696,7 +2703,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadSavedTheme();
     
     // 版本信息和运行模式
-    console.log('🚀 生活管理系统 v4.4 已启动');
+    console.log('🚀 生活管理系统 v4.7 已启动');
     console.log('📅 版本日期: 2025-08-27');
     console.log('✨ 新功能: AI智能处理 + DeepSeek集成 + 部署优化');
     console.log('🌐 当前运行环境:', {
