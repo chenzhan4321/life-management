@@ -265,6 +265,18 @@ async def get_today_completed_tasks():
         "date": today
     })
 
+@app.options("/api/tasks/{task_id}/uncomplete")
+async def uncomplete_task_options(task_id: str):
+    """处理uncomplete端点的OPTIONS预检请求"""
+    return JSONResponse(
+        content={},
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type"
+        }
+    )
+
 @app.post("/api/tasks/{task_id}/uncomplete")
 async def uncomplete_task(task_id: str):
     """将已完成的任务恢复为未完成状态"""
