@@ -1170,22 +1170,26 @@ function renderTaskItem(task) {
                    ${task.status === 'completed' ? 'checked' : ''}
                    onchange="toggleTaskStatus('${task.id}', this.checked)">
             <div class="task-content">
-                <div class="task-title" contenteditable="true" 
-                     onblur="updateTaskTitle('${task.id}', this.innerText)"
-                     onkeypress="if(event.key==='Enter'){event.preventDefault();this.blur();}">${task.title}</div>
+                <div class="task-title" contenteditable="${task.status === 'completed' ? 'false' : 'true'}" 
+                     onblur="${task.status === 'completed' ? '' : `updateTaskTitle('${task.id}', this.innerText)`}"
+                     onkeypress="${task.status === 'completed' ? '' : `if(event.key==='Enter'){event.preventDefault();this.blur();}`}"
+                     style="${task.status === 'completed' ? 'cursor: default;' : ''}">${task.title}</div>
                 <div class="task-meta">
                     <select class="domain-selector ${task.domain}" 
-                            onchange="changeTaskDomain('${task.id}', this.value)"
-                            data-current="${task.domain}">
+                            onchange="${task.status === 'completed' ? '' : `changeTaskDomain('${task.id}', this.value)`}"
+                            data-current="${task.domain}"
+                            ${task.status === 'completed' ? 'disabled' : ''}>
                         <option value="academic" ${task.domain === 'academic' ? 'selected' : ''}>🎓 学术</option>
                         <option value="income" ${task.domain === 'income' ? 'selected' : ''}>💰 收入</option>
                         <option value="growth" ${task.domain === 'growth' ? 'selected' : ''}>🌱 成长</option>
                         <option value="life" ${task.domain === 'life' ? 'selected' : ''}>🏠 生活</option>
                     </select>
                     <span>⏱ <input type="number" class="inline-edit-number" value="${task.estimated_minutes || 30}" 
-                            onchange="updateTaskField('${task.id}', 'estimated_minutes', this.value)" min="5" max="480"> 分钟</span>
+                            onchange="${task.status === 'completed' ? '' : `updateTaskField('${task.id}', 'estimated_minutes', this.value)`}" 
+                            min="5" max="480" ${task.status === 'completed' ? 'disabled' : ''}> 分钟</span>
                     <span>🎯 优先级 <select class="inline-edit-select" 
-                            onchange="updateTaskField('${task.id}', 'priority', this.value)">
+                            onchange="${task.status === 'completed' ? '' : `updateTaskField('${task.id}', 'priority', this.value)`}"
+                            ${task.status === 'completed' ? 'disabled' : ''}>
                         ${[1,2,3,4,5].map(p => `<option value="${p}" ${task.priority === p ? 'selected' : ''}>${p}</option>`).join('')}
                     </select></span>
                     ${task.status !== 'pool' ? `<span class="time-input-wrapper">📅 
@@ -1843,6 +1847,15 @@ function updateDomainProgress(domain, completedMinutes, activeMinutes, pausedMin
 async function updateTaskTitle(taskId, newTitle) {
     if (!newTitle.trim()) return;
     
+    // 检查任务是否已完成
+    const task = window.currentTasks?.find(t => t.id === taskId);
+    if (task && task.status === 'completed') {
+        showToast('已完成的任务不能编辑', 'warning');
+        // 恢复原始标题
+        await loadTasks();
+        return;
+    }
+    
     try {
         const response = await fetch(`${API_BASE}/api/tasks/${taskId}`, {
             method: 'PATCH',
@@ -1872,11 +1885,12 @@ async function updateTaskTitle(taskId, newTitle) {
 // 更新任务字段
 async function updateTaskField(taskId, field, value) {
     try {
-        // 检查任务是否已完成（已归档的任务不应该被更新）
+        // 检查任务是否已完成（已归档的任务不应该被更新，除非是恢复操作）
         const task = window.currentTasks?.find(t => t.id === taskId);
-        if (task && task.status === 'completed') {
-            console.log('跳过更新已完成的任务:', taskId);
-            return; // 不更新已完成的任务
+        if (task && task.status === 'completed' && field !== 'status') {
+            console.log('跳过更新已完成的任务（非状态字段）:', taskId, field);
+            showToast('已完成的任务不能编辑', 'warning');
+            return; // 不更新已完成任务的其他字段
         }
         
         const updateData = {};
@@ -2485,8 +2499,11 @@ async function toggleTaskStatus(taskId, isCompleted) {
         if (!isCompleted) {
             // 检查任务是否在已完成列表中
             const task = window.currentTasks?.find(t => t.id === taskId);
-            if (task && task.status === 'completed') {
-                // 使用uncomplete API
+            console.log('恢复任务检查:', taskId, task?.status);
+            
+            // 如果任务已经是完成状态，或者在今日已完成区域，使用uncomplete API
+            if (task && (task.status === 'completed' || task.completed_at)) {
+                console.log('使用uncomplete API恢复任务:', taskId);
                 const response = await fetch(`${API_BASE}/api/tasks/${taskId}/uncomplete`, {
                     method: 'POST',
                     headers: {
@@ -2501,6 +2518,8 @@ async function toggleTaskStatus(taskId, isCompleted) {
                     await loadTasks();
                     await updateDashboard();
                 } else {
+                    const errorText = await response.text();
+                    console.error('恢复失败:', response.status, errorText);
                     showToast('恢复失败', 'error');
                     await loadTasks();
                 }
