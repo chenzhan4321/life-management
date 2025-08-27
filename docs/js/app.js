@@ -485,41 +485,65 @@ function loadPausedTimersFromLocalStorage() {
     if (saved) {
         try {
             const timersData = JSON.parse(saved);
+            // 清理无效的计时器数据
+            const validTimers = {};
             Object.entries(timersData).forEach(([taskId, data]) => {
+                // 验证数据有效性
+                if (!data || typeof data.elapsedSeconds !== 'number' || data.elapsedSeconds < 0) {
+                    console.warn(`跳过无效的计时器数据: ${taskId}`, data);
+                    return;
+                }
+                
                 // 对于活动任务，计算从上次保存到现在的时间差
                 let currentElapsedSeconds = data.elapsedSeconds || 0;
                 if (data.status === 'active' && data.savedAt) {
                     const lastSaveTime = new Date(data.savedAt);
                     const now = new Date();
                     const additionalSeconds = Math.floor((now - lastSaveTime) / 1000);
-                    currentElapsedSeconds = (data.elapsedSeconds || 0) + additionalSeconds;
+                    // 防止时间计算错误导致负数或极大值
+                    if (additionalSeconds > 0 && additionalSeconds < 86400) { // 最多增加24小时
+                        currentElapsedSeconds = (data.elapsedSeconds || 0) + additionalSeconds;
+                    }
                     console.log(`任务 ${taskId} 恢复活动状态，原时间: ${data.elapsedSeconds}，额外时间: ${additionalSeconds}，总时间: ${currentElapsedSeconds}`);
                 }
                 
-                // 恢复计时器数据到内存
-                taskTimerData.set(taskId, {
-                    status: data.status,
-                    startTime: new Date(), // 重新设置为当前时间
-                    actualStart: data.actualStart,
-                    elapsedSeconds: currentElapsedSeconds
-                });
-                
-                // 如果有活动的计时器，启动全局计时器
-                if (data.status === 'active') {
-                    ensureGlobalTimer();
-                    console.log(`恢复活动任务 ${taskId}，经过时间: ${currentElapsedSeconds}秒`);
-                    // 立即显示当前时间（如果元素存在）
-                    const taskElement = document.querySelector(`[data-task-id="${taskId}"]`);
-                    if (taskElement) {
-                        updateTimerDisplay(taskId, currentElapsedSeconds);
-                        console.log(`立即更新任务 ${taskId} 的计时显示: ${currentElapsedSeconds}秒`);
+                // 只恢复有效的计时器数据到内存
+                if (currentElapsedSeconds >= 0 && currentElapsedSeconds < 86400) { // 合理的时间范围
+                    taskTimerData.set(taskId, {
+                        status: data.status,
+                        startTime: new Date(), // 重新设置为当前时间
+                        actualStart: data.actualStart,
+                        elapsedSeconds: currentElapsedSeconds
+                    });
+                    
+                    // 保存有效数据用于后续清理
+                    validTimers[taskId] = data;
+                    
+                    // 如果有活动的计时器，启动全局计时器
+                    if (data.status === 'active') {
+                        ensureGlobalTimer();
+                        console.log(`恢复活动任务 ${taskId}，经过时间: ${currentElapsedSeconds}秒`);
+                        // 立即显示当前时间（如果元素存在）
+                        const taskElement = document.querySelector(`[data-task-id="${taskId}"]`);
+                        if (taskElement) {
+                            updateTimerDisplay(taskId, currentElapsedSeconds);
+                            console.log(`立即更新任务 ${taskId} 的计时显示: ${currentElapsedSeconds}秒`);
+                        }
                     }
-                }
-                
-                if (data.status === 'paused') {
-                    console.log(`恢复暂停任务 ${taskId}，经过时间: ${currentElapsedSeconds}秒`);
+                    
+                    if (data.status === 'paused') {
+                        console.log(`恢复暂停任务 ${taskId}，经过时间: ${currentElapsedSeconds}秒`);
+                    }
+                } else {
+                    console.warn(`跳过超出范围的计时器: ${taskId}, 时间: ${currentElapsedSeconds}`);
                 }
             });
+            
+            // 保存清理后的有效计时器数据
+            if (Object.keys(validTimers).length !== Object.keys(timersData).length) {
+                localStorage.setItem('taskTimers', JSON.stringify(validTimers));
+                console.log('已清理无效的计时器数据');
+            }
         } catch (error) {
             console.error('加载计时器失败:', error);
         }
@@ -693,6 +717,11 @@ function updateTimerDisplay(taskId, seconds, isPaused = false) {
 
 // 格式化时间显示
 function formatTime(seconds) {
+    // 确保输入是有效数字
+    if (isNaN(seconds) || seconds < 0) {
+        return '0:00';
+    }
+    
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
