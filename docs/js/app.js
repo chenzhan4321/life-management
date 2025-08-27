@@ -932,7 +932,7 @@ async function loadTasks() {
         // 如果已经是静态模式（GitHub Pages），直接加载静态数据
         if (STATIC_MODE) {
             console.log('静态模式：加载静态数据...');
-            const basePath = window.location.hostname === 'localhost' ? '.' : '/life-management';
+            const basePath = window.location.hostname === 'localhost' ? '.' : '/life-management-system';
             response = await fetch(`${basePath}/tasks-data.json`);
             data = await response.json();
         } else {
@@ -957,11 +957,30 @@ async function loadTasks() {
             }
         }
         
+        // 获取今日已完成的任务
+        let completedTodayTasks = [];
+        if (!STATIC_MODE) {
+            try {
+                const completedResponse = await fetch(`${API_BASE}/api/tasks/completed/today`);
+                if (completedResponse.ok) {
+                    const completedData = await completedResponse.json();
+                    completedTodayTasks = completedData.tasks || [];
+                    console.log(`获取到 ${completedTodayTasks.length} 个今日已完成任务`);
+                }
+            } catch (error) {
+                console.error('获取今日已完成任务失败:', error);
+            }
+        }
+        
+        // 合并任务数据（排除已完成状态的任务，因为它们已经归档）
+        const activeTasks = data.tasks.filter(t => t.status !== 'completed');
+        const allTasks = [...activeTasks, ...completedTodayTasks];
+        
         // 保存任务数据到全局变量，供提醒功能使用
-        window.currentTasks = data.tasks;
+        window.currentTasks = allTasks;
         
         // 清理已完成任务的计时器
-        data.tasks.forEach(task => {
+        allTasks.forEach(task => {
             if (task.status === 'completed') {
                 // 如果任务已完成，确保没有活动或暂停的计时器
                 if (activeTimers.has(task.id)) {
@@ -981,16 +1000,16 @@ async function loadTasks() {
         
         const tasksList = document.getElementById('tasksList');
         
-        if (data.tasks.length === 0) {
+        if (allTasks.length === 0) {
             tasksList.innerHTML = '<div class="no-tasks">暂无任务，请添加新任务</div>';
             return;
         }
         
         // 分类任务
-        const pendingTasks = data.tasks.filter(t => t.status === 'pending' || t.status === 'in_progress');
-        const waitingTasks = data.tasks.filter(t => t.status === 'waiting');
-        const poolTasks = data.tasks.filter(t => t.status === 'pool');  // 只显示状态为pool的任务
-        const completedTasks = data.tasks.filter(t => t.status === 'completed');
+        const pendingTasks = allTasks.filter(t => t.status === 'pending' || t.status === 'in_progress');
+        const waitingTasks = allTasks.filter(t => t.status === 'waiting');
+        const poolTasks = allTasks.filter(t => t.status === 'pool');  // 只显示状态为pool的任务
+        const completedTasks = allTasks.filter(t => t.status === 'completed');
         
         // 按优先级排序（优先级高的在前），优先级相同则按时间排序
         pendingTasks.sort((a, b) => {
