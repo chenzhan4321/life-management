@@ -2520,8 +2520,19 @@ async function toggleTaskStatus(taskId, isCompleted) {
                 } else {
                     const errorText = await response.text();
                     console.error('恢复失败:', response.status, errorText);
-                    showToast('恢复失败', 'error');
+                    
+                    // 即使API调用失败，也尝试刷新页面以获取最新状态
+                    // 因为可能是CORS问题，但操作实际上成功了
                     await loadTasks();
+                    await updateDashboard();
+                    
+                    // 检查任务是否真的被恢复了
+                    const updatedTask = window.currentTasks?.find(t => t.id === taskId);
+                    if (updatedTask && updatedTask.status === 'pending') {
+                        showToast('任务已恢复', 'success');
+                    } else {
+                        showToast('恢复失败', 'error');
+                    }
                 }
                 return;
             }
