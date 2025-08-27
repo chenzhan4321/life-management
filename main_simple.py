@@ -224,12 +224,21 @@ async def patch_task(task_id: str, task_data: Dict[str, Any] = Body(...)):
 
 @app.delete("/api/tasks/{task_id}")
 async def delete_task(task_id: str):
-    """删除任务"""
-    if task_id not in tasks_db:
-        raise HTTPException(status_code=404, detail="任务不存在")
-    del tasks_db[task_id]
-    await save_tasks_async()  # 保存到文件
-    return JSONResponse({"success": True, "message": "任务已删除"})
+    """删除任务（包括已归档的任务）"""
+    # 先尝试从活动任务中删除
+    if task_id in tasks_db:
+        del tasks_db[task_id]
+        await save_tasks_async()  # 保存到文件
+        return JSONResponse({"success": True, "message": "任务已删除"})
+    
+    # 如果不在活动任务中，尝试从归档任务中删除
+    if task_id in completed_history:
+        del completed_history[task_id]
+        await save_completed_tasks()  # 保存归档文件
+        return JSONResponse({"success": True, "message": "已归档任务已删除"})
+    
+    # 如果都不存在，返回404
+    raise HTTPException(status_code=404, detail="任务不存在")
 
 @app.get("/api/analytics/daily")
 async def get_daily_analytics():
