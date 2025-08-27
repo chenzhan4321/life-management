@@ -21,7 +21,9 @@
             background: #0f0f23;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
             position: relative;
-            overflow: hidden;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 20px 0;
         }
         
         /* 动态背景效果 */
@@ -418,22 +420,38 @@
                 }
             } catch (error) {
                 // 如果 API 不可用，使用本地存储模拟登录
-                const users = JSON.parse(localStorage.getItem('users') || '{}');
+                // 预设 chenzhan 账户
+                const predefinedUsers = {
+                    'chenzhan': { password: '531020', avatar: '😊' }
+                };
                 
-                if (users[username] && users[username].password === password) {
+                const localUsers = JSON.parse(localStorage.getItem('users') || '{}');
+                const allUsers = { ...predefinedUsers, ...localUsers };
+                
+                if (username === 'chenzhan' && password === '531020') {
+                    // chenzhan 管理员账户
+                    localStorage.setItem('currentUser', JSON.stringify({
+                        username: 'chenzhan',
+                        avatar: selectedEmoji || '😊',
+                        token: btoa(username + ':' + Date.now()),
+                        isAdmin: true
+                    }));
+                    window.location.href = 'index.html';
+                } else if (allUsers[username] && allUsers[username].password === password) {
+                    // 其他已注册用户
                     localStorage.setItem('currentUser', JSON.stringify({
                         username,
-                        avatar: users[username].avatar || selectedEmoji,
+                        avatar: allUsers[username].avatar || selectedEmoji,
                         token: btoa(username + ':' + Date.now())
                     }));
                     window.location.href = 'index.html';
-                } else if (!users[username]) {
-                    // 自动注册新用户
-                    users[username] = {
+                } else if (!allUsers[username] && username !== 'chenzhan') {
+                    // 自动注册新用户（chenzhan除外）
+                    localUsers[username] = {
                         password,
                         avatar: selectedEmoji
                     };
-                    localStorage.setItem('users', JSON.stringify(users));
+                    localStorage.setItem('users', JSON.stringify(localUsers));
                     localStorage.setItem('currentUser', JSON.stringify({
                         username,
                         avatar: selectedEmoji,
@@ -442,6 +460,7 @@
                     window.location.href = 'index.html';
                 } else {
                     errorMessage.textContent = '密码错误';
+                    errorMessage.className = 'error-message';
                     errorMessage.style.display = 'block';
                 }
             }
