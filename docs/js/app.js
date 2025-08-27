@@ -2835,7 +2835,7 @@ async function changeTaskDomain(taskId, newDomain) {
         
         const data = await response.json();
         
-        if (response.ok && data.success) {
+        if (response.ok && (data.success || data.status === 'success')) {
             showToast(`任务已移动到 ${newDomain} 域`, 'success');
             await loadTasks();
             await updateDashboard();
