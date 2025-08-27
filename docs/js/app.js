@@ -2742,7 +2742,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 显示版本信息提示
     if (window.location.hostname.includes('github.io')) {
         setTimeout(() => {
-            showToast('🚀 生活管理系统 v4.4 - AI智能化版本', 'success');
+            showToast('🚀 生活管理系统 v4.8 - AI智能化版本', 'success');
         }, 2000);
     } else if (window.location.hostname.includes('railway.app')) {
         setTimeout(() => {

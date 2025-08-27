@@ -1,5 +1,5 @@
 """
-生活管理系统 API v4.2 - 集成AI智能处理与持久化存储
+生活管理系统 API v4.8 - 集成AI智能处理与持久化存储
 """
 from fastapi import FastAPI, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
@@ -20,7 +20,7 @@ DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions"
 
 # 创建 FastAPI 应用
 app = FastAPI(
-    title="生活管理系统 API v4.2",
+    title="生活管理系统 API v4.8",
     description="集成AI智能处理与持久化存储的任务管理系统",
     version="4.2.0"
 )
