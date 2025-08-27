@@ -1288,6 +1288,82 @@ async function loadTasks() {
         }
         html += '</div></div>';
         
+        // 时间域仪表板 - 移到任务池之后、已完成任务之前
+        html += `
+        <div class="domain-dashboard">
+            <h2>今日时间域分配</h2>
+            <div class="domains-grid">
+                <div class="domain-card academic" data-domain="academic">
+                    <h3>🎓 学术/论文</h3>
+                    <div class="progress-ring">
+                        <svg width="120" height="120">
+                            <circle cx="60" cy="60" r="54" fill="none" stroke="#e0e0e0" stroke-width="8"/>
+                            <circle cx="60" cy="60" r="54" fill="none" stroke="#4285F4" stroke-width="8"
+                                    stroke-dasharray="339.292" stroke-dashoffset="339.292"
+                                    class="progress-ring-circle" id="academicProgress"/>
+                        </svg>
+                        <div class="progress-text">
+                            <span class="hours">0/4</span>
+                            <span class="label">小时</span>
+                        </div>
+                    </div>
+                    <div class="domain-tasks" id="academicTasks"></div>
+                </div>
+
+                <div class="domain-card income" data-domain="income">
+                    <h3>💰 收入/挣钱</h3>
+                    <div class="progress-ring">
+                        <svg width="120" height="120">
+                            <circle cx="60" cy="60" r="54" fill="none" stroke="#e0e0e0" stroke-width="8"/>
+                            <circle cx="60" cy="60" r="54" fill="none" stroke="#34A853" stroke-width="8"
+                                    stroke-dasharray="339.292" stroke-dashoffset="339.292"
+                                    class="progress-ring-circle" id="incomeProgress"/>
+                        </svg>
+                        <div class="progress-text">
+                            <span class="hours">0/4</span>
+                            <span class="label">小时</span>
+                        </div>
+                    </div>
+                    <div class="domain-tasks" id="incomeTasks"></div>
+                </div>
+
+                <div class="domain-card growth" data-domain="growth">
+                    <h3>🌱 个人成长</h3>
+                    <div class="progress-ring">
+                        <svg width="120" height="120">
+                            <circle cx="60" cy="60" r="54" fill="none" stroke="#e0e0e0" stroke-width="8"/>
+                            <circle cx="60" cy="60" r="54" fill="none" stroke="#FBBC04" stroke-width="8"
+                                    stroke-dasharray="339.292" stroke-dashoffset="339.292"
+                                    class="progress-ring-circle" id="growthProgress"/>
+                        </svg>
+                        <div class="progress-text">
+                            <span class="hours">0/4</span>
+                            <span class="label">小时</span>
+                        </div>
+                    </div>
+                    <div class="domain-tasks" id="growthTasks"></div>
+                </div>
+
+                <div class="domain-card life" data-domain="life">
+                    <h3>🏠 生活琐事</h3>
+                    <div class="progress-ring">
+                        <svg width="120" height="120">
+                            <circle cx="60" cy="60" r="54" fill="none" stroke="#e0e0e0" stroke-width="8"/>
+                            <circle cx="60" cy="60" r="54" fill="none" stroke="#EA4335" stroke-width="8"
+                                    stroke-dasharray="339.292" stroke-dashoffset="339.292"
+                                    class="progress-ring-circle" id="lifeProgress"/>
+                        </svg>
+                        <div class="progress-text">
+                            <span class="hours">0/4</span>
+                            <span class="label">小时</span>
+                        </div>
+                    </div>
+                    <div class="domain-tasks" id="lifeTasks"></div>
+                </div>
+            </div>
+        </div>
+        `;
+        
         // 已完成任务
         if (completedTasks.length > 0) {
             html += '<div class="tasks-completed task-drop-zone" data-status="completed"><h3>今日已完成</h3>';
