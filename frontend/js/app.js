@@ -4,6 +4,7 @@
 
 // 用户认证检查
 let currentUser = null;
+let userEmojiCache = {};
 
 function checkUserAuth() {
     const userStr = localStorage.getItem('currentUser');
@@ -20,6 +21,10 @@ function checkUserAuth() {
         const userName = document.getElementById('userName');
         if (userAvatar) userAvatar.textContent = currentUser.avatar || '😊';
         if (userName) userName.textContent = currentUser.username || '用户';
+        
+        // 缓存当前用户的emoji
+        userEmojiCache[currentUser.username] = currentUser.avatar || '😊';
+        
         return true;
     } catch (error) {
         console.error('用户信息解析失败:', error);
@@ -27,6 +32,35 @@ function checkUserAuth() {
         window.location.href = 'login.html';
         return false;
     }
+}
+
+// 获取用户的 emoji
+function getUserEmoji(username) {
+    if (!username) return '';
+    
+    // 先从缓存中查找
+    if (userEmojiCache[username]) {
+        return userEmojiCache[username];
+    }
+    
+    // 从本地存储的用户列表中查找
+    const users = JSON.parse(localStorage.getItem('users') || '{}');
+    if (users[username] && users[username].avatar) {
+        userEmojiCache[username] = users[username].avatar;
+        return users[username].avatar;
+    }
+    
+    // 特殊处理 chenzhan 账户
+    if (username === 'chenzhan') {
+        userEmojiCache[username] = '😊';
+        return '😊';
+    }
+    
+    // 默认emoji（基于用户名生成）
+    const defaultEmojis = ['🙂', '😄', '😎', '🤓', '🤗', '😇', '🤔', '😌'];
+    const index = username.charCodeAt(0) % defaultEmojis.length;
+    userEmojiCache[username] = defaultEmojis[index];
+    return defaultEmojis[index];
 }
 
 // 动态检测API基础URL
@@ -1217,7 +1251,7 @@ function renderTaskItem(task) {
                      onblur="${task.status === 'completed' || (task.username && task.username !== currentUser?.username) ? '' : `updateTaskTitle('${task.id}', this.innerText)`}"
                      onkeypress="${task.status === 'completed' || (task.username && task.username !== currentUser?.username) ? '' : `if(event.key==='Enter'){event.preventDefault();this.blur();}`}"
                      style="${task.status === 'completed' || (task.username && task.username !== currentUser?.username) ? 'cursor: default;' : ''}">
-                    ${task.title}
+                    ${getUserEmoji(task.username)} ${task.title}
                     ${task.username && task.username !== currentUser?.username ? 
                       `<span style="margin-left: 8px; padding: 2px 6px; background: #f0f0f0; border-radius: 12px; font-size: 12px; color: #666;">@${task.username}</span>` : 
                       ''}
