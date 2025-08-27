@@ -1301,8 +1301,8 @@ async function loadTasks() {
         // 初始化拖放功能
         initDragAndDrop();
         
-        // 更新各域的任务列表和进度圆环
-        updateDomainDisplay(data.tasks);
+        // 更新各域的任务列表和进度圆环 - 使用包含已完成任务的 allTasks
+        updateDomainDisplay(allTasks);
         
         // 设置任务提醒
         setupTaskReminders();

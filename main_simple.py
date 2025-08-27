@@ -311,27 +311,49 @@ async def uncomplete_task(task_id: str):
         await save_tasks()
         await save_completed_history()
         
-        return JSONResponse({
-            "success": True,
-            "message": "任务已恢复到未完成状态",
-            "task": task
-        })
+        return JSONResponse(
+            content={
+                "success": True,
+                "message": "任务已恢复到未完成状态",
+                "task": task
+            },
+            headers={
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "POST, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type"
+            }
+        )
     else:
         # 如果不在历史中，可能在活动任务中，直接更新状态
         if task_id in tasks_db:
             tasks_db[task_id]["status"] = "pending"
             tasks_db[task_id]["completed_at"] = None
             await save_tasks()
-            return JSONResponse({
-                "success": True,
-                "message": "任务已更新为未完成状态",
-                "task": tasks_db[task_id]
-            })
+            return JSONResponse(
+                content={
+                    "success": True,
+                    "message": "任务已更新为未完成状态",
+                    "task": tasks_db[task_id]
+                },
+                headers={
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Methods": "POST, OPTIONS",
+                    "Access-Control-Allow-Headers": "Content-Type"
+                }
+            )
         else:
-            return JSONResponse({
-                "success": False,
-                "message": "任务未找到"
-            }, status_code=404)
+            return JSONResponse(
+                content={
+                    "success": False,
+                    "message": "任务未找到"
+                },
+                status_code=404,
+                headers={
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Methods": "POST, OPTIONS",
+                    "Access-Control-Allow-Headers": "Content-Type"
+                }
+            )
 
 # AI处理相关数据模型
 class AIProcessRequest(BaseModel):
