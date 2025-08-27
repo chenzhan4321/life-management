@@ -14,7 +14,7 @@ const API_CONFIG = {
         if (hostname.includes('github.io')) {
             // 替换为你的 Vercel 后端地址
             // 部署后请更新为实际的Vercel URL
-            return 'https://your-app-name.vercel.app';
+            return 'https://lifemanagement.vercel.app';
         }
         
         // Railway 部署（如果还在使用）
