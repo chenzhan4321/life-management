@@ -2578,8 +2578,36 @@ async function toggleTaskStatus(taskId, isCompleted) {
         }
     } catch (error) {
         console.error('更新任务状态失败:', error);
-        showToast('更新失败', 'error');
+        
+        // 即使出错也刷新页面，检查实际状态
         await loadTasks();
+        await updateDashboard();
+        
+        // 检查任务的实际状态来判断操作是否成功
+        const updatedTask = window.currentTasks?.find(t => t.id === taskId);
+        if (!isCompleted && !updatedTask) {
+            // 如果是恢复操作但在当前任务列表中找不到，可能操作失败了
+            // 但也可能是因为任务从已完成列表移出了，需要额外检查
+            const completedTasks = window.currentTasks?.filter(t => t.status === 'completed') || [];
+            const isStillCompleted = completedTasks.some(t => t.id === taskId);
+            
+            if (!isStillCompleted) {
+                // 任务不在已完成列表中了，说明恢复成功
+                showToast('任务已恢复', 'success');
+            } else {
+                showToast('更新失败', 'error');
+            }
+        } else if (updatedTask) {
+            // 如果我们想要设置的状态和实际状态一致，说明操作成功了
+            const expectedStatus = isCompleted ? 'completed' : 'pending';
+            if (updatedTask.status === expectedStatus) {
+                showToast(isCompleted ? '✅ 任务已完成' : '任务已恢复', 'success');
+            } else {
+                showToast('更新失败', 'error');
+            }
+        } else {
+            showToast('更新失败', 'error');
+        }
     }
 }
 
