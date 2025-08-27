@@ -1121,7 +1121,7 @@ async function loadTasks() {
         // 如果已经是静态模式（GitHub Pages），直接加载静态数据
         if (STATIC_MODE) {
             console.log('静态模式：加载静态数据...');
-            const basePath = window.location.hostname === 'localhost' ? '.' : '/life-management-system';
+            const basePath = window.location.hostname === 'localhost' ? '.' : '/life-management';
             response = await fetch(`${basePath}/tasks-data.json`);
             data = await response.json();
         } else {
@@ -1140,7 +1140,7 @@ async function loadTasks() {
                 console.error('API连接失败:', apiError.message);
                 console.log('切换到静态模式');
                 STATIC_MODE = true;
-                const basePath = window.location.hostname === 'localhost' ? '.' : '/life-management-system';
+                const basePath = window.location.hostname === 'localhost' ? '.' : '/life-management';
                 response = await fetch(`${basePath}/tasks-data.json`);
                 data = await response.json();
             }
