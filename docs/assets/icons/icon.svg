@@ -1,0 +1,28 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="512" height="512" fill="#1a1a1a"/>
+  
+  <!-- Life Management Grid -->
+  <rect x="64" y="64" width="384" height="384" fill="none" stroke="#ffffff" stroke-width="4"/>
+  
+  <!-- Quadrants -->
+  <!-- Academic (top-left) -->
+  <rect x="64" y="64" width="192" height="192" fill="#1e88e5" opacity="0.8"/>
+  <text x="160" y="140" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#ffffff" text-anchor="middle">学术</text>
+  
+  <!-- Income (top-right) -->
+  <rect x="256" y="64" width="192" height="192" fill="#43a047" opacity="0.8"/>
+  <text x="352" y="140" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#ffffff" text-anchor="middle">收入</text>
+  
+  <!-- Growth (bottom-left) -->
+  <rect x="64" y="256" width="192" height="192" fill="#fb8c00" opacity="0.8"/>
+  <text x="160" y="332" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#ffffff" text-anchor="middle">成长</text>
+  
+  <!-- Life (bottom-right) -->
+  <rect x="256" y="256" width="192" height="192" fill="#e53935" opacity="0.8"/>
+  <text x="352" y="332" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#ffffff" text-anchor="middle">生活</text>
+  
+  <!-- Center circle for logo -->
+  <circle cx="256" cy="256" r="32" fill="#ffffff"/>
+  <text x="256" y="266" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#1a1a1a" text-anchor="middle">生</text>
+</svg>

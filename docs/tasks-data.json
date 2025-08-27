@@ -1,0 +1,20 @@
+{
+  "tasks": [
+    {
+      "id": "task_demo_1",
+      "title": "示例任务1 - 学习新技术",
+      "domain": "growth",
+      "status": "pending",
+      "priority": 3,
+      "estimated_minutes": 60
+    },
+    {
+      "id": "task_demo_2",
+      "title": "示例任务2 - 完成项目报告",
+      "domain": "academic",
+      "status": "pending",
+      "priority": 4,
+      "estimated_minutes": 120
+    }
+  ]
+}

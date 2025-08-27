@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>清除缓存</title>
+    <meta charset="UTF-8">
+</head>
+<body>
+    <h1>清除缓存工具</h1>
+    <button onclick="clearAllCache()">清除所有缓存</button>
+    <div id="status"></div>
+    
+    <script>
+    async function clearAllCache() {
+        const status = document.getElementById('status');
+        
+        // 1. 清除 Service Worker
+        if ('serviceWorker' in navigator) {
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            for(let registration of registrations) {
+                await registration.unregister();
+                status.innerHTML += '<p>✅ Service Worker 已注销</p>';
+            }
+        }
+        
+        // 2. 清除所有缓存
+        if ('caches' in window) {
+            const cacheNames = await caches.keys();
+            await Promise.all(
+                cacheNames.map(cacheName => {
+                    caches.delete(cacheName);
+                    status.innerHTML += `<p>✅ 缓存 ${cacheName} 已删除</p>`;
+                })
+            );
+        }
+        
+        // 3. 清除 localStorage
+        localStorage.clear();
+        status.innerHTML += '<p>✅ localStorage 已清除</p>';
+        
+        // 4. 清除 sessionStorage
+        sessionStorage.clear();
+        status.innerHTML += '<p>✅ sessionStorage 已清除</p>';
+        
+        status.innerHTML += '<h3>✅ 所有缓存已清除！</h3>';
+        status.innerHTML += '<p>3秒后将跳转到主页...</p>';
+        
+        // 5. 3秒后跳转
+        setTimeout(() => {
+            window.location.href = '/';
+        }, 3000);
+    }
+    </script>
+</body>
+</html>

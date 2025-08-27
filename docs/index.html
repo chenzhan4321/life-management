@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>生活管理系统 v4.4 - AI智能化版本</title>
+    <!-- 版本标识 -->
+    <meta name="version" content="v4.4">
+    <meta name="description" content="v4.4：实现JSON文件持久化存储，数据不再丢失">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="./favicon.ico">
+    <link rel="shortcut icon" href="./favicon.ico">
+    
+    <!-- PWA支持 -->
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#007AFF">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="生活管理">
+    <meta name="application-name" content="生活管理系统">
+    <meta name="msapplication-TileColor" content="#007AFF">
+    <meta name="msapplication-config" content="./assets/browserconfig.xml">
+    
+    <!-- iOS Safari 支持 -->
+    <link rel="apple-touch-icon" sizes="180x180" href="./assets/icons/icon-192x192.png">
+    <link rel="apple-touch-startup-image" href="./assets/icons/icon-512x192.png">
+    
+    <!-- Android Chrome 支持 -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-status-bar-style" content="default">
+    
+    <!-- 主题样式 -->
+    <link id="theme-stylesheet" rel="stylesheet" href="./css/theme-light.css?v=4.0">
+    <!-- 移动端响应式样式 -->
+    <link rel="stylesheet" href="./css/mobile.css?v=4.0">
+</head>
+<body>
+    <!-- 主题切换器 -->
+    <div class="theme-switcher">
+        <label for="theme-select">主题:</label>
+        <select id="theme-select" onchange="changeTheme(this.value)">
+            <option value="light" selected>浅色主题</option>
+            <option value="dark">深色模式</option>
+        </select>
+    </div>
+    
+    <div class="container">
+        <!-- 顶部导航 -->
+        <nav class="navbar">
+            <div class="nav-brand">
+                <span class="logo">🎯</span>
+                <div>
+                    <h1>生活管理系统</h1>
+                    <span style="font-size: 10px; color: #666; font-weight: 500;">v4.4 - 持久化存储</span>
+                </div>
+            </div>
+            <div class="nav-stats">
+                <div class="stat-item">
+                    <span class="stat-label">今日完成</span>
+                    <span class="stat-value" id="todayCompleted">0/0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">生产力分数</span>
+                    <span class="stat-value" id="productivityScore">0%</span>
+                </div>
+            </div>
+        </nav>
+
+        <!-- AI 智能任务输入 -->
+        <div class="ai-input-section">
+            <h2>AI 智能任务处理</h2>
+            <p class="input-hint">
+                💡 单行输入添加单个任务，多行或分号分隔批量添加任务
+            </p>
+            <textarea id="aiTaskInput" 
+                      placeholder="输入任务，AI 会自动分类、预测时间、安排时间槽...
+
+示例：
+回复 Tony 的邮件
+研究 OCR 错误检测方法
+整理出差票据给雪媚
+法语老师通信30分钟
+
+或用分号分隔：回复邮件；整理文档；开会讨论"
+                      rows="6"></textarea>
+            <div class="input-actions">
+                <button onclick="aiProcessTasks()" class="btn btn-primary">
+                    <span class="btn-icon">✨</span> AI 智能处理
+                </button>
+                <button onclick="clearInput()" class="btn btn-secondary">
+                    清空
+                </button>
+            </div>
+            <div id="aiProcessing" class="ai-processing hidden">
+                <div class="loading-spinner"></div>
+                <span>AI 正在处理...</span>
+            </div>
+            <div id="processResult" class="process-result hidden"></div>
+        </div>
+        
+        <!-- 手工快速添加 -->
+        <div class="manual-input-section">
+            <h3>🚀 快速添加任务</h3>
+            <div class="manual-input-flex">
+                <input type="text" 
+                       id="quickTaskInput" 
+                       placeholder="输入任务标题（按Enter添加）" 
+                       class="quick-task-input"
+                       onkeypress="if(event.key==='Enter'){addQuickTask();}">
+                <select id="quickTaskDomain" class="quick-task-select">
+                    <option value="academic">🎓 学术</option>
+                    <option value="income">💰 收入</option>
+                    <option value="growth">🌱 成长</option>
+                    <option value="life">🏠 生活</option>
+                </select>
+                <input type="number" 
+                       id="quickTaskMinutes" 
+                       placeholder="分钟" 
+                       value="30" 
+                       min="5" 
+                       max="480"
+                       class="quick-task-number">
+                <button onclick="addQuickTask()" class="btn btn-primary quick-add-btn">
+                    <span class="btn-icon">➕</span> 添加
+                </button>
+            </div>
+        </div>
+
+        <!-- 时间域仪表板 -->
+        <div class="domain-dashboard">
+            <h2>今日时间域分配</h2>
+            <div class="domains-grid">
+                <div class="domain-card academic" data-domain="academic">
+                    <h3>🎓 学术/论文</h3>
+                    <div class="progress-ring">
+                        <svg width="120" height="120">
+                            <circle cx="60" cy="60" r="54" fill="none" stroke="#e0e0e0" stroke-width="8"/>
+                            <circle cx="60" cy="60" r="54" fill="none" stroke="#4285F4" stroke-width="8"
+                                    stroke-dasharray="339.292" stroke-dashoffset="339.292"
+                                    class="progress-ring-circle" id="academicProgress"/>
+                        </svg>
+                        <div class="progress-text">
+                            <span class="hours">0/4</span>
+                            <span class="label">小时</span>
+                        </div>
+                    </div>
+                    <div class="domain-tasks" id="academicTasks"></div>
+                </div>
+
+                <div class="domain-card income" data-domain="income">
+                    <h3>💰 收入/挣钱</h3>
+                    <div class="progress-ring">
+                        <svg width="120" height="120">
+                            <circle cx="60" cy="60" r="54" fill="none" stroke="#e0e0e0" stroke-width="8"/>
+                            <circle cx="60" cy="60" r="54" fill="none" stroke="#34A853" stroke-width="8"
+                                    stroke-dasharray="339.292" stroke-dashoffset="339.292"
+                                    class="progress-ring-circle" id="incomeProgress"/>
+                        </svg>
+                        <div class="progress-text">
+                            <span class="hours">0/4</span>
+                            <span class="label">小时</span>
+                        </div>
+                    </div>
+                    <div class="domain-tasks" id="incomeTasks"></div>
+                </div>
+
+                <div class="domain-card growth" data-domain="growth">
+                    <h3>🌱 个人成长</h3>
+                    <div class="progress-ring">
+                        <svg width="120" height="120">
+                            <circle cx="60" cy="60" r="54" fill="none" stroke="#e0e0e0" stroke-width="8"/>
+                            <circle cx="60" cy="60" r="54" fill="none" stroke="#FBBC04" stroke-width="8"
+                                    stroke-dasharray="339.292" stroke-dashoffset="339.292"
+                                    class="progress-ring-circle" id="growthProgress"/>
+                        </svg>
+                        <div class="progress-text">
+                            <span class="hours">0/4</span>
+                            <span class="label">小时</span>
+                        </div>
+                    </div>
+                    <div class="domain-tasks" id="growthTasks"></div>
+                </div>
+
+                <div class="domain-card life" data-domain="life">
+                    <h3>🏠 生活琐事</h3>
+                    <div class="progress-ring">
+                        <svg width="120" height="120">
+                            <circle cx="60" cy="60" r="54" fill="none" stroke="#e0e0e0" stroke-width="8"/>
+                            <circle cx="60" cy="60" r="54" fill="none" stroke="#EA4335" stroke-width="8"
+                                    stroke-dasharray="339.292" stroke-dashoffset="339.292"
+                                    class="progress-ring-circle" id="lifeProgress"/>
+                        </svg>
+                        <div class="progress-text">
+                            <span class="hours">0/4</span>
+                            <span class="label">小时</span>
+                        </div>
+                    </div>
+                    <div class="domain-tasks" id="lifeTasks"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 任务列表 -->
+        <div class="tasks-section">
+            <div class="section-header">
+                <h2>今日任务</h2>
+                <div class="action-buttons">
+                    <button onclick="toggleSelectAll()" class="btn btn-select-all">
+                        <span class="btn-icon">☑️</span> 全选
+                    </button>
+                    <button onclick="deleteSelectedTasks()" class="btn btn-delete-selected" style="display:none;">
+                        <span class="btn-icon">🗑️</span> 删除选中
+                    </button>
+                    <button onclick="optimizeSchedule()" class="btn btn-optimize">
+                        <span class="btn-icon">🔄</span> 优化日程
+                    </button>
+                    <button onclick="updateOntology()" class="btn btn-learn">
+                        <span class="btn-icon">🧠</span> AI 学习
+                    </button>
+                </div>
+            </div>
+            <div id="tasksList" class="tasks-list"></div>
+        </div>
+
+        <!-- AI 洞察面板 -->
+        <div class="insights-panel">
+            <h3>AI 洞察与建议</h3>
+            <div id="aiInsights" class="insights-content">
+                <div class="insight-item">
+                    💡 系统正在学习您的工作模式...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast 提示 -->
+    <div id="toast" class="toast"></div>
+
+    <!-- PWA安装提示 -->
+    <div id="pwa-install-banner" class="pwa-install-banner" style="display: none;">
+        <div class="pwa-banner-content">
+            <span>🚀 安装生活管理系统到您的设备</span>
+            <div class="pwa-banner-actions">
+                <button id="pwa-install-btn" class="btn btn-primary">安装</button>
+                <button id="pwa-dismiss-btn" class="btn btn-secondary">稍后</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 加载API配置 -->
+    <script src="./js/config.js?v=4.0"></script>
+    <script src="./js/app.js?v=4.0"></script>
+    
+    <!-- 主题切换功能 -->
+    <script>
+        function changeTheme(theme) {
+            const themeStylesheet = document.getElementById('theme-stylesheet');
+            themeStylesheet.href = `./css/theme-${theme}.css?v=4.0`;
+            localStorage.setItem('selectedTheme', theme);
+        }
+        
+        // 加载保存的主题
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('selectedTheme') || 'light';
+            document.getElementById('theme-select').value = savedTheme;
+            changeTheme(savedTheme);
+        });
+    </script>
+    
+    <!-- PWA支持脚本 -->
+    <script>
+        // Service Worker 注册 (仅在 HTTP/HTTPS 协议下)
+        if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./js/sw.js')
+                    .then(registration => {
+                        console.log('SW registered: ', registration);
+                        
+                        // 检查更新
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    // 显示更新提示
+                                    showUpdateNotification(registration);
+                                }
+                            });
+                        });
+                    })
+                    .catch(registrationError => {
+                        console.log('SW registration failed: ', registrationError);
+                    });
+            });
+        }
+
+        // PWA 安装提示
+        let deferredPrompt;
+        
+        window.addEventListener('beforeinstallprompt', (e) => {
+            console.log('PWA安装提示可用');
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // 显示自定义安装横幅
+            const installBanner = document.getElementById('pwa-install-banner');
+            const installBtn = document.getElementById('pwa-install-btn');
+            const dismissBtn = document.getElementById('pwa-dismiss-btn');
+            
+            // 检查用户是否之前拒绝过安装
+            const dismissed = localStorage.getItem('pwa-install-dismissed');
+            if (!dismissed) {
+                installBanner.style.display = 'block';
+                setTimeout(() => {
+                    installBanner.classList.add('show');
+                }, 100);
+            }
+            
+            installBtn.addEventListener('click', async () => {
+                installBanner.style.display = 'none';
+                deferredPrompt.prompt();
+                
+                const { outcome } = await deferredPrompt.userChoice;
+                console.log(`用户选择: ${outcome}`);
+                
+                if (outcome === 'accepted') {
+                    showToast('🎉 应用安装成功！', 'success');
+                } else {
+                    localStorage.setItem('pwa-install-dismissed', 'true');
+                }
+                
+                deferredPrompt = null;
+            });
+            
+            dismissBtn.addEventListener('click', () => {
+                installBanner.style.display = 'none';
+                localStorage.setItem('pwa-install-dismissed', 'true');
+                
+                // 7天后再次显示
+                setTimeout(() => {
+                    localStorage.removeItem('pwa-install-dismissed');
+                }, 7 * 24 * 60 * 60 * 1000);
+            });
+        });
+
+        // 应用安装完成
+        window.addEventListener('appinstalled', () => {
+            console.log('PWA 安装完成');
+            showToast('🎉 应用已添加到主屏幕！', 'success');
+            localStorage.removeItem('pwa-install-dismissed');
+        });
+
+        // 显示更新通知
+        function showUpdateNotification(registration) {
+            const updateToast = document.createElement('div');
+            updateToast.className = 'toast toast-update';
+            updateToast.innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <span>🔄 应用有新版本可用</span>
+                    <div>
+                        <button onclick="updateApp('${registration}')" class="btn btn-primary btn-small">更新</button>
+                        <button onclick="this.parentElement.parentElement.parentElement.remove()" class="btn btn-secondary btn-small">稍后</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(updateToast);
+            
+            setTimeout(() => {
+                updateToast.classList.add('show');
+            }, 100);
+        }
+
+        // 更新应用
+        function updateApp(registration) {
+            const worker = registration.waiting;
+            worker.postMessage({ type: 'SKIP_WAITING' });
+            
+            worker.addEventListener('statechange', () => {
+                if (worker.state === 'activated') {
+                    window.location.reload();
+                }
+            });
+        }
+
+        // 处理网络状态变化
+        window.addEventListener('online', () => {
+            showToast('🌐 网络已连接', 'success');
+            // 触发后台同步
+            if ('serviceWorker' in navigator && 'sync' in window.ServiceWorkerRegistration.prototype) {
+                navigator.serviceWorker.ready.then(registration => {
+                    return registration.sync.register('background-sync-tasks');
+                });
+            }
+        });
+
+        window.addEventListener('offline', () => {
+            showToast('📱 离线模式 - 数据将在网络恢复时同步', 'info');
+        });
+
+        // 检测是否为PWA模式运行
+        if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) {
+            console.log('在PWA模式下运行');
+            document.body.classList.add('pwa-mode');
+        }
+    </script>
+
+    <!-- PWA样式 -->
+    <style>
+        .pwa-install-banner {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(135deg, #007AFF, #0051D2);
+            color: white;
+            padding: 15px 20px;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
+        }
+
+        .pwa-install-banner.show {
+            transform: translateY(0);
+        }
+
+        .pwa-banner-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .pwa-banner-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .pwa-banner-actions .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .pwa-banner-actions .btn-primary {
+            background: white;
+            color: #007AFF;
+        }
+
+        .pwa-banner-actions .btn-secondary {
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+
+        .toast-update {
+            background: #4CAF50;
+            color: white;
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            z-index: 1001;
+        }
+
+        .btn-small {
+            padding: 4px 8px !important;
+            font-size: 12px !important;
+            margin-left: 5px;
+        }
+
+        /* PWA模式下的样式调整 */
+        .pwa-mode {
+            /* 为PWA模式添加特殊样式 */
+        }
+
+        @media (max-width: 768px) {
+            .pwa-banner-content {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+            
+            .pwa-banner-actions {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</body>
+</html>
