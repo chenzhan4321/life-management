@@ -137,6 +137,7 @@
         
         .emoji-selector {
             margin-bottom: 20px;
+            width: 100%;
         }
         
         .emoji-selector label {
@@ -149,22 +150,30 @@
         
         .emoji-grid {
             display: grid;
-            grid-template-columns: repeat(8, 1fr);
+            grid-template-columns: repeat(6, 1fr);
             gap: 8px;
-            margin-bottom: 10px;
+            margin: 0 auto 15px;
+            max-width: 280px;
+            padding: 5px;
+        }
+        
+        @media (max-width: 400px) {
+            .emoji-grid {
+                grid-template-columns: repeat(5, 1fr);
+                max-width: 230px;
+            }
         }
         
         .emoji-option {
-            width: 42px;
-            height: 42px;
+            aspect-ratio: 1;
             border: 1px solid rgba(255, 255, 255, 0.1);
             background: rgba(255, 255, 255, 0.03);
-            border-radius: 10px;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            font-size: 24px;
+            font-size: 22px;
             transition: all 0.3s;
         }
         
@@ -328,12 +337,12 @@
     </div>
     
     <script>
-        // 可选的 emoji 头像
+        // 可选的 emoji 头像（精选24个）
         const availableEmojis = [
-            '😊', '😎', '🤓', '😇', '🥳', '😍', '🤗', '🤔',
-            '😴', '😜', '🤠', '🥸', '👨‍💻', '👩‍💻', '🧑‍🎨', '👨‍🎓',
-            '🦁', '🐯', '🐶', '🐱', '🐼', '🐨', '🐸', '🦊',
-            '🌟', '⭐', '🌙', '☀️', '🌈', '🔥', '💎', '🎯'
+            '😊', '😎', '🤓', '😇', '🥳', '🤗',
+            '👨‍💻', '👩‍💻', '🧑‍🎨', '👨‍🎓', '👩‍🏫', '🧑‍💼',
+            '🦁', '🐯', '🐼', '🦊', '🐨', '🦄',
+            '🌟', '⭐', '🔥', '💎', '🎯', '🚀'
         ];
         
         let selectedEmoji = '😊';
