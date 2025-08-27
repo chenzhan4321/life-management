@@ -15,7 +15,7 @@
 - 数据存储: JSON 文件 (data/tasks.json)
 
 ## 版本管理
-- 当前版本: v4.7
+- 当前版本: v4.8
 - 所有版本更新记录在 claude_changelog.md
 - 所有版本更新，需要 git commit、然后修改所有对应版本号（如在主页上和在这个文档中）
 

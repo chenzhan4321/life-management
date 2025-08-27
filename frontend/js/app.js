@@ -1,4 +1,4 @@
-// 生活管理系统前端应用 v4.7
+// 生活管理系统前端应用 v4.8
 // 更新日期: 2025-08-27
 // 特性: AI智能处理 + DeepSeek集成 + 部署优化
 // 动态检测API基础URL
@@ -2481,6 +2481,33 @@ async function toggleTaskStatus(taskId, isCompleted) {
             }
         }
         
+        // 如果是要恢复已完成的任务，使用专门的API
+        if (!isCompleted) {
+            // 检查任务是否在已完成列表中
+            const task = window.currentTasks?.find(t => t.id === taskId);
+            if (task && task.status === 'completed') {
+                // 使用uncomplete API
+                const response = await fetch(`${API_BASE}/api/tasks/${taskId}/uncomplete`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    showToast('任务已恢复', 'success');
+                    // 清除过期提醒记录
+                    overdueRemindedTasks.delete(taskId);
+                    await loadTasks();
+                    await updateDashboard();
+                } else {
+                    showToast('恢复失败', 'error');
+                    await loadTasks();
+                }
+                return;
+            }
+        }
+        
         const updateData = {
             status: isCompleted ? 'completed' : 'pending'
         };
@@ -2703,7 +2730,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadSavedTheme();
     
     // 版本信息和运行模式
-    console.log('🚀 生活管理系统 v4.7 已启动');
+    console.log('🚀 生活管理系统 v4.8 已启动');
     console.log('📅 版本日期: 2025-08-27');
     console.log('✨ 新功能: AI智能处理 + DeepSeek集成 + 部署优化');
     console.log('🌐 当前运行环境:', {

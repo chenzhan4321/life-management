@@ -265,6 +265,49 @@ async def get_today_completed_tasks():
         "date": today
     })
 
+@app.post("/api/tasks/{task_id}/uncomplete")
+async def uncomplete_task(task_id: str):
+    """将已完成的任务恢复为未完成状态"""
+    # 先检查任务是否在已完成历史中
+    if task_id in completed_history:
+        task = completed_history[task_id].copy()
+        # 恢复任务到活动任务列表
+        task["status"] = "pending"
+        task["completed_at"] = None
+        task.pop("completed_date", None)  # 移除完成日期
+        
+        # 添加回活动任务
+        tasks_db[task_id] = task
+        
+        # 从历史中删除
+        del completed_history[task_id]
+        
+        # 保存数据
+        await save_tasks()
+        await save_completed_history()
+        
+        return JSONResponse({
+            "success": True,
+            "message": "任务已恢复到未完成状态",
+            "task": task
+        })
+    else:
+        # 如果不在历史中，可能在活动任务中，直接更新状态
+        if task_id in tasks_db:
+            tasks_db[task_id]["status"] = "pending"
+            tasks_db[task_id]["completed_at"] = None
+            await save_tasks()
+            return JSONResponse({
+                "success": True,
+                "message": "任务已更新为未完成状态",
+                "task": tasks_db[task_id]
+            })
+        else:
+            return JSONResponse({
+                "success": False,
+                "message": "任务未找到"
+            }, status_code=404)
+
 # AI处理相关数据模型
 class AIProcessRequest(BaseModel):
     text: str

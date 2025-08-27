@@ -1,7 +1,7 @@
-// Service Worker for 生活管理系统 PWA v4.4
-const CACHE_NAME = 'life-management-v4.4.0';
-const STATIC_CACHE = 'life-management-static-v4.4.0';
-const DYNAMIC_CACHE = 'life-management-dynamic-v4.4.0';
+// Service Worker for 生活管理系统 PWA v4.8
+const CACHE_NAME = 'life-management-v4.8.0';
+const STATIC_CACHE = 'life-management-static-v4.8.0';
+const DYNAMIC_CACHE = 'life-management-dynamic-v4.8.0';
 
 // 需要缓存的静态文件 - 修复路径
 const STATIC_FILES = [
