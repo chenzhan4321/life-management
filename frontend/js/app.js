@@ -18,8 +18,8 @@ const API_BASE = (() => {
     
     // GitHub Pages检测 - 现在使用外部API
     if (hostname.includes('github.io')) {
-        // 使用配置文件中的Railway API
-        return 'https://api-production-70ed.up.railway.app';
+        // 使用配置文件中的Vercel API
+        return window.API_CONFIG ? window.API_CONFIG.baseURL : 'https://lifemanagement.vercel.app';
     }
     
     // 本地开发

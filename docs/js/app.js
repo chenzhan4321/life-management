@@ -18,8 +18,8 @@ const API_BASE = (() => {
     
     // GitHub Pages检测 - 现在使用外部API
     if (hostname.includes('github.io')) {
-        // 使用配置文件中的Railway API
-        return 'https://api-production-70ed.up.railway.app';
+        // 使用配置文件中的Vercel API
+        return window.API_CONFIG ? window.API_CONFIG.baseURL : 'https://lifemanagement.vercel.app';
     }
     
     // 本地开发
@@ -932,7 +932,7 @@ async function loadTasks() {
         // 如果已经是静态模式（GitHub Pages），直接加载静态数据
         if (STATIC_MODE) {
             console.log('静态模式：加载静态数据...');
-            const basePath = window.location.hostname === 'localhost' ? '.' : '/life-management-system';
+            const basePath = window.location.hostname === 'localhost' ? '.' : '/life-management';
             response = await fetch(`${basePath}/tasks-data.json`);
             data = await response.json();
         } else {
